@@ -1,11 +1,7 @@
 name: Go - Build and Test
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
-  push:
-    branches:
-      - 'main'
+  workflow_call:
 
 jobs:
   build:
