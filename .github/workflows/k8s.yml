@@ -1,0 +1,19 @@
+name: K8s checks
+
+on: [pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup CLIs
+        uses: alexellis/arkade-get@master
+        with:
+          kube-score: latest
+          helm: latest
+      - name: Lint helm chart
+        run: helm lint ./deployment
+      - name: kube-score
+        run: helm template ./deployment | kube-score score -
