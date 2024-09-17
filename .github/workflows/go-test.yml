@@ -2,6 +2,10 @@ name: Go - Build and Test
 
 on:
   workflow_call:
+    inputs:
+      root-package:
+        required: true
+        type: string
 
 jobs:
   build:
@@ -42,5 +46,6 @@ jobs:
     steps:
       - uses: fgrosse/go-coverage-report@v1.2.0
         with:
+          root-package: ${{ inputs.root-package }}
           coverage-artifact-name: "code-coverage"
           coverage-file-name: "coverage.txt"
