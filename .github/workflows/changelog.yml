@@ -2,18 +2,24 @@ name: Changelog
 
 on:
   workflow_call:
+    inputs:
+      docker-image-name:
+        required: true
+        type: string
 
 jobs:
   changelog:
     name: Generate changelog
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Generate the changelog
+      - name: Generate full changelog
         uses: orhun/git-cliff-action@v4
         id: git-cliff
         with:
@@ -21,6 +27,30 @@ jobs:
           args: --verbose
         env:
           OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
 
       - name: Print the changelog
         run: cat "${{ steps.git-cliff.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Generate release changelog
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff-release
+        with:
+          config: cliff.toml
+          args: -v --latest
+        env:
+          OUTPUT: RELEASE-CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Create a release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: CHANGELOG.md
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+          body: |
+            # ${{ inputs.docker-image-name }} ${{ github.ref_name }}
+            --
+            Docker images for this release can be found at public.ecr.aws/p3k6k6h3/${{ inputs.docker-image-name }}:${{ github.ref_name }}
+            --
+            ${{ steps.git-cliff-release.outputs.changelog }}
