@@ -49,10 +49,10 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
           body: |
-            # ${{ inputs.docker-image-name }} ${{ github.ref_name }}
+            # 🐙 ${{ inputs.docker-image-name }} ${{ github.ref_name }}
 
             ${{ steps.git-cliff-release.outputs.content }}
 
             ---
 
-            Docker images for this release can be found at public.ecr.aws/p3k6k6h3/${{ inputs.docker-image-name }}:${{ github.ref_name }}
+            > Docker images for this release can be found at public.ecr.aws/p3k6k6h3/${{ inputs.docker-image-name }}:${{ github.ref_name }}
