@@ -37,7 +37,7 @@ jobs:
         id: git-cliff-release
         with:
           config: cliff.toml
-          args: -v --latest
+          args: -v --latest --strip header
         env:
           OUTPUT: RELEASE-CHANGELOG.md
           GITHUB_REPO: ${{ github.repository }}
@@ -53,6 +53,6 @@ jobs:
 
             ${{ steps.git-cliff-release.outputs.content }}
 
-            --
+            ---
 
             Docker images for this release can be found at public.ecr.aws/p3k6k6h3/${{ inputs.docker-image-name }}:${{ github.ref_name }}
