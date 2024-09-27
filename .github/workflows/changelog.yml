@@ -56,3 +56,29 @@ jobs:
             ---
 
             > Docker images for this release can be found at public.ecr.aws/p3k6k6h3/${{ inputs.docker-image-name }}:${{ github.ref_name }}
+      
+      - name: Checkout changelog repo
+        uses: actions/checkout@v4
+        with:
+          repository: DecisiveAI/changelogs
+          path: ./mdai-changelogs
+
+      - name: Get changelog app token
+        id: app-token
+        uses: getsentry/action-github-app-token@v3.1
+        with:
+          app_id: ${{ secrets.CHANGELOG_APP_ID }}
+          private_key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+
+      - name: Commit changelog
+        run: |
+          cd ./mdai-changelogs
+          cp ../CHANGELOG.md ./${{ inputs.docker-image-name }}.md
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          set +e
+          git add ${{ inputs.docker-image-name }}.md
+          git commit -m "Update ${{ inputs.docker-image-name }} changelog for ${{ github.ref_name }}"
+          git push https://${{ steps.app-token.outputs.token }}@github.com/DecisiveAI/changelogs.git rlaw/testing-auto-changelogs
+# TODO: FIX THE BRANCH AT THE END OF THE LINE ABOVE! REJECT THIS PR!
+
