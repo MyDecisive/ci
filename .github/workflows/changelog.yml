@@ -6,12 +6,11 @@ on:
       docker-image-name:
         required: true
         type: string
+    secrets:
       changelog-app-id:
         required: true
-        type: string
       changelog-app-token:
         required: true
-        type: string
 
 jobs:
   changelog:
@@ -73,8 +72,8 @@ jobs:
         id: app-token
         uses: getsentry/action-github-app-token@v3.0.0
         with:
-          app_id: ${{ inputs.changelog-app-id }}
-          private_key: ${{ inputs.changelog-app-token }}
+          app_id: ${{ secrets.changelog-app-id }}
+          private_key: ${{ secrets.changelog-app-token }}
 
       - name: Commit changelog
         run: |
