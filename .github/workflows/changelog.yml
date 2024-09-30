@@ -67,6 +67,8 @@ jobs:
         with:
           repository: DecisiveAI/changelogs
           path: ./mdai-changelogs
+          ref: rlaw/testing-auto-changelogs
+# TODO: FIX THE BRANCH AT THE END OF THE LINE ABOVE! REJECT THIS PR!
 
       - name: Get changelog app token
         id: app-token
