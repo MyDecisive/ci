@@ -1,10 +1,11 @@
 name: Changelog
 
+env:
+  APP_ID: ${{ secrets.CHANGELOG_APP_ID }}
+  TOKEN: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+
 on:
   workflow_call:
-    env:
-      APP_ID: ${{ secrets.CHANGELOG_APP_ID }}
-      TOKEN: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
     inputs:
       docker-image-name:
         required: true
