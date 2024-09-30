@@ -1,13 +1,15 @@
 name: Changelog
 
-env:
-  APP_ID: ${{ secrets.CHANGELOG_APP_ID }}
-  TOKEN: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
-
 on:
   workflow_call:
     inputs:
       docker-image-name:
+        required: true
+        type: string
+      changelog-app-id:
+        required: true
+        type: string
+      changelog-app-token:
         required: true
         type: string
 
@@ -71,8 +73,8 @@ jobs:
         id: app-token
         uses: getsentry/action-github-app-token@v3.0.0
         with:
-          app_id: ${{ secrets.CHANGELOG_APP_ID }}
-          private_key: ${{ secrets.CHANGELOG_APP_PRIVATE_KEY }}
+          app_id: ${{ inputs.changelog-app-id }}
+          private_key: ${{ inputs.changelog-app-token }}
 
       - name: Commit changelog
         run: |
