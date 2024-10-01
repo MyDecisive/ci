@@ -90,8 +90,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           repository: DecisiveAI/changelogs
           path: ./mdai-changelogs
-          ref: rlaw/testing-auto-changelogs
-# TODO: FIX THE BRANCH AT THE END OF THE LINE ABOVE! REJECT THIS PR!
+          ref: main
 
       - name: Commit changelog
         run: |
@@ -100,6 +99,5 @@ jobs:
           set +e
           git add ${{ inputs.docker-image-name }}.md
           git commit -m "Update ${{ inputs.docker-image-name }} changelog for ${{ github.ref_name }}"
-          git push https://${{ steps.app-token.outputs.token }}@github.com/DecisiveAI/changelogs.git rlaw/testing-auto-changelogs
-# TODO: FIX THE BRANCH AT THE END OF THE LINE ABOVE! REJECT THIS PR!
+          git push https://${{ steps.app-token.outputs.token }}@github.com/DecisiveAI/changelogs.git main
 
