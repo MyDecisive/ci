@@ -74,8 +74,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v1
         with:
-          app_id: ${{ secrets.changelog-app-id }}
-          private_key: ${{ secrets.changelog-app-token }}
+          app-id: ${{ secrets.changelog-app-id }}
+          private-key: ${{ secrets.changelog-app-token }}
 
       - name: Get GitHub App User ID
         id: get-user-id
