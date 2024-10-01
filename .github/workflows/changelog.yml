@@ -68,7 +68,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ secrets.changelog-app-id }}
+          app-id: ${{ inputs.changelog-app-id }}
           private-key: ${{ secrets.changelog-app-token }}
           owner: ${{ github.repository_owner }}
           repositories: changelogs
