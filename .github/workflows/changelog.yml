@@ -70,7 +70,7 @@ jobs:
           app-id: ${{ secrets.changelog-app-id }}
           private-key: ${{ secrets.changelog-app-token }}
           owner: ${{ github.repository_owner }}
-          repositories: DecisiveAI/changelogs
+          repositories: changelogs
 
       - name: Get GitHub App User ID
         id: get-user-id
