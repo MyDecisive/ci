@@ -6,6 +6,12 @@ on:
       docker-image-name:
         required: true
         type: string
+      changelog-app-id:
+        required: true
+        type: string
+    secrets:
+      changelog-app-token:
+        required: true
 
 jobs:
   changelog:
@@ -56,3 +62,42 @@ jobs:
             ---
 
             > Docker images for this release can be found at public.ecr.aws/p3k6k6h3/${{ inputs.docker-image-name }}:${{ github.ref_name }}
+      
+
+      - name: Get changelog app token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ inputs.changelog-app-id }}
+          private-key: ${{ secrets.changelog-app-token }}
+          owner: ${{ github.repository_owner }}
+          repositories: changelogs
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          
+      - name: Set App Github Identity
+        run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+
+      - name: Checkout changelog repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          repository: DecisiveAI/changelogs
+          path: ./mdai-changelogs
+          ref: main
+
+      - name: Commit changelog
+        run: |
+          cd ./mdai-changelogs
+          cp ../CHANGELOG.md ./${{ inputs.docker-image-name }}.md
+          set +e
+          git add ${{ inputs.docker-image-name }}.md
+          git commit -m "Update ${{ inputs.docker-image-name }} changelog for ${{ github.ref_name }}"
+          git push https://${{ steps.app-token.outputs.token }}@github.com/DecisiveAI/changelogs.git main
+
