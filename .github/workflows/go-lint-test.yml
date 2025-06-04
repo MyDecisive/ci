@@ -1,0 +1,122 @@
+name: Go CI
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: 'Path to test coverage config'
+        type: string
+        required: false
+        default: ''
+      coverage-repo:
+        description: 'Repository to publish coverage to'
+        type: string
+        required: false
+        default: 'DecisiveAI/platform-health'
+    secrets:
+      APP_PRIVATE_KEY:
+        description: 'GitHub App private key'
+        required: true
+      PLATFORM_HEALTH_ACCESS_APP_ID:
+        description: 'GitHub App ID'
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@v4
+
+      - name: Run Go lint
+        uses: decisiveai/ci/go-lint@main
+
+  check-go-file-changes:
+    name: Check if Go files changed
+    runs-on: ubuntu-latest
+    needs: lint
+    outputs:
+      go_files_changed: ${{ steps.check.outputs.go_files_changed }}
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine base commit
+        id: base
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_COMMIT="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_COMMIT=$(git rev-parse HEAD~1)
+          fi
+          echo "BASE_COMMIT=$BASE_COMMIT" >> "$GITHUB_ENV"
+
+      - name: Check for Go-related file changes
+        id: check
+        run: |
+          git fetch origin main
+          CHANGED_FILES=$(git diff --name-only "$BASE_COMMIT" HEAD -- '**/*.go' 'go.mod' 'go.sum' '*.go' | grep -vE '^vendor/' || true)
+
+          if [[ -z "$CHANGED_FILES" ]]; then
+            echo "No relevant Go file changes detected."
+            echo "go_files_changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Relevant Go file changes detected."
+            echo "go_files_changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  test:
+    name: Test on Ubuntu
+    runs-on: ubuntu-latest
+    needs: [lint, check-go-file-changes]
+    if: needs.check-go-file-changes.outputs.go_files_changed == 'true'
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@v4
+
+      - name: Run Go tests
+        uses: decisiveai/ci/go-test@main
+
+  report-coverage:
+    name: Report code coverage
+    runs-on: ubuntu-latest
+    needs: [test, check-go-file-changes]
+    if: github.event_name == 'pull_request' && needs.check-go-file-changes.outputs.go_files_changed == 'true'
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@v4
+
+      - name: Generate coverage report
+        uses: decisiveai/ci/coverage-report@main
+        with:
+          config-path: ${{ inputs.config-path }}
+          github-token: ${{ github.token }}
+
+  main-coverage:
+    name: Generate and publish coverage on main
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@v4
+
+      - name: Publish coverage
+        uses: decisiveai/ci/coverage-publish@main
+        with:
+          config-path: ${{ inputs.config-path }}
+          coverage-repo: ${{ inputs.coverage-repo }}
+          app-id: ${{ secrets.PLATFORM_HEALTH_ACCESS_APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          github-token: ${{ github.token }}

@@ -1,0 +1,114 @@
+name: 'Publish Coverage'
+description: 'Publish coverage to remote repository and update badge'
+
+inputs:
+  config-path:
+    description: 'Path to test coverage config'
+    required: false
+    default: ''
+  coverage-repo:
+    description: 'Repository to publish coverage to'
+    required: false
+    default: 'DecisiveAI/platform-health'
+  app-id:
+    description: 'GitHub App ID for authentication'
+    required: true
+  private-key:
+    description: 'GitHub App private key'
+    required: true
+  github-token:
+    description: 'GitHub token for badge updates'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download coverage artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: code-coverage
+        path: .
+
+    - name: Generate test coverage report and breakdown
+      id: coverage
+      continue-on-error: true
+      uses: vladopajic/go-test-coverage@v2
+      with:
+        config: ${{ inputs.config-path || format('{0}/.testcoverage.yml', github.action_path) }}
+        profile: coverage.out
+
+    - name: Upload breakdown as baseline for future diffs
+      uses: actions/upload-artifact@v4
+      with:
+        name: main-breakdown
+        path: main.breakdown
+
+    - name: Save coverage report to file
+      shell: bash
+      run: |
+        echo '${{ fromJSON(steps.coverage.outputs.report) }}' > coverage-${{ github.event.repository.name }}.txt
+
+    - name: Extract repository info
+      id: repo-info
+      shell: bash
+      run: |
+        COVERAGE_REPO="${{ inputs.coverage-repo }}"
+        echo "owner=${COVERAGE_REPO%/*}" >> $GITHUB_OUTPUT
+        echo "repo=${COVERAGE_REPO#*/}" >> $GITHUB_OUTPUT
+
+    - uses: actions/create-github-app-token@v2
+      id: generate_token
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+        owner: ${{ steps.repo-info.outputs.owner }}
+        repositories: |
+          ${{ github.event.repository.name }}
+          ${{ steps.repo-info.outputs.repo }}
+
+    - name: Publish coverage to remote repository
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+      run: |
+        # Clone the coverage repository
+        git clone https://x-access-token:${GH_TOKEN}@github.com/${{ inputs.coverage-repo }}.git coverage-repo
+        cd coverage-repo
+        
+        # Configure git
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Action"
+        
+        # Copy the new coverage file
+        cp ../coverage-${{ github.event.repository.name }}.txt .
+        
+        # Commit and push changes
+        git add coverage-${{ github.event.repository.name }}.txt
+        if git diff --cached --quiet; then
+          echo "✅ No changes to commit."
+          exit 0
+        fi
+        git commit -m "chore: Update coverage report for ${{ github.event.repository.name }} from CI"
+        git push origin main
+
+    - name: Generate Go Coverage Badge
+      id: generate-badge
+      uses: tj-actions/coverage-badge-go@v3
+      with:
+        filename: coverage.out
+
+    - name: Commit badge changes
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        git fetch origin main
+        git checkout main
+        git pull origin main
+
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        git add README.md
+        git commit -m "chore: Updated coverage badge. [skip ci]" || echo "No changes to commit"
+        git push origin main
