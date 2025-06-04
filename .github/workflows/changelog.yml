@@ -36,7 +36,7 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Print the changelog
-        run: cat "${{ steps.git-cliff.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY
+        run: cat "${{ steps.git-cliff.outputs.changelog }}" >> "$GITHUB_STEP_SUMMARY"
       
       - name: Generate release changelog
         uses: orhun/git-cliff-action@v4
