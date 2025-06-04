@@ -4,14 +4,14 @@ In the consuming repository's workflow:
 jobs:
   test:
     steps:
-      - uses: decisiveai/ci/go-test-lint@main
+      - uses: DecisiveAI/ci/go-test-lint@main
         with:
           config-path: ./.github/.testcoverage.yml  # Custom config
 ```
 
 Or if they want to use a different location:
 ```yaml
-  - uses: decisiveai/ci/go-test-lint@main
+  - uses: DecisiveAI/ci/go-test-lint@main
     with:
       config-path: ./custom-coverage.yml
 ```
