@@ -10,6 +10,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+inputs:
+  config-path:
+    description: 'Path to test coverage config'
+    required: false
+    default: ''
+
 env:
   COVERAGE_REPO: ${{ vars.COVERAGE_REPO || 'DecisiveAI/platform-health' }}
   REPO_NAME: ${{ github.event.repository.name }}
@@ -138,7 +144,7 @@ jobs:
         uses: vladopajic/go-test-coverage@v2
         continue-on-error: true
         with:
-          config: ./.github/.testcoverage.yml
+          config: ${{ inputs.config-path || format('{0}/.testcoverage.yml', github.action_path) }}
           profile: coverage.out
           diff-base-breakdown-file-name: ${{ hashFiles('baseline/main.breakdown') != '' && 'baseline/main.breakdown' || '' }}
 
