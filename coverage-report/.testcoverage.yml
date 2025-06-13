@@ -39,7 +39,7 @@ exclude:
   # Exclude files or packages matching their paths
   paths:
     - \.pb\.go$    # excludes all protobuf generated files
-    - .+_mock\.go$     # exclude package `pkg/bar`
+    - .+_mock\.go$
     - .+_test\.go$
 
 # File name of go-test-coverage breakdown file, which can be used to

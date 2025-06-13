@@ -24,7 +24,7 @@ runs:
   using: 'composite'
   steps:
     - name: Download coverage artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
       with:
         name: code-coverage
         path: .
@@ -32,31 +32,36 @@ runs:
     - name: Generate test coverage report and breakdown
       id: coverage
       continue-on-error: true
-      uses: vladopajic/go-test-coverage@v2
+      uses: vladopajic/go-test-coverage@ebf1fb6f7267bd290a83cc16f535067b51fd1d0b
       with:
         config: ${{ inputs.config-path || format('{0}/.testcoverage.yml', github.action_path) }}
         profile: coverage.out
 
     - name: Upload breakdown as baseline for future diffs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
       with:
         name: main-breakdown
         path: main.breakdown
 
     - name: Save coverage report to file
       shell: bash
+      env:
+        COVERAGE_REPORT: ${{ steps.coverage.outputs.report }}
+        REPO_NAME: ${{ github.event.repository.name }}
       run: |
-        echo '${{ fromJSON(steps.coverage.outputs.report) }}' > coverage-${{ github.event.repository.name }}.txt
+        echo "${COVERAGE_REPORT}" > "coverage-${REPO_NAME}.txt"
 
     - name: Extract repository info
       id: repo-info
       shell: bash
+      env:
+        COVERAGE_REPO: ${{ inputs.coverage-repo }}
       run: |
-        COVERAGE_REPO="${{ inputs.coverage-repo }}"
-        echo "owner=${COVERAGE_REPO%/*}" >> $GITHUB_OUTPUT
-        echo "repo=${COVERAGE_REPO#*/}" >> $GITHUB_OUTPUT
+        echo "owner=${COVERAGE_REPO%/*}" >> "$GITHUB_OUTPUT"
+        echo "repo=${COVERAGE_REPO#*/}" >> "$GITHUB_OUTPUT"
 
-    - uses: actions/create-github-app-token@v2
+    - name: Generate GitHub App token
+      uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
       id: generate_token
       with:
         app-id: ${{ inputs.app-id }}
@@ -70,9 +75,11 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        COVERAGE_REPO: ${{ inputs.coverage-repo }}
+        REPO_NAME: ${{ github.event.repository.name }}
       run: |
         # Clone the coverage repository
-        git clone https://x-access-token:${GH_TOKEN}@github.com/${{ inputs.coverage-repo }}.git coverage-repo
+        git clone "https://x-access-token:${GH_TOKEN}@github.com/${COVERAGE_REPO}.git" coverage-repo
         cd coverage-repo
         
         # Configure git
@@ -80,20 +87,20 @@ runs:
         git config --global user.name "GitHub Action"
         
         # Copy the new coverage file
-        cp ../coverage-${{ github.event.repository.name }}.txt .
+        cp "../coverage-${REPO_NAME}.txt" .
         
         # Commit and push changes
-        git add coverage-${{ github.event.repository.name }}.txt
+        git add "coverage-${REPO_NAME}.txt"
         if git diff --cached --quiet; then
           echo "✅ No changes to commit."
           exit 0
         fi
-        git commit -m "chore: Update coverage report for ${{ github.event.repository.name }} from CI"
+        git commit -m "chore: Update coverage report for ${REPO_NAME} from CI"
         git push origin main
 
     - name: Generate Go Coverage Badge
       id: generate-badge
-      uses: tj-actions/coverage-badge-go@v3
+      uses: tj-actions/coverage-badge-go@481919ec72da287775fef015fd9011dc75a5db05
       with:
         filename: coverage.out
 

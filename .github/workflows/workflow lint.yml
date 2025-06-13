@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -14,12 +18,19 @@ jobs:
   actionlint:
     name: Lint GitHub Actions
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Run actionlint
-        uses: raven-actions/actionlint@v1
+        uses: raven-actions/actionlint@3a24062651993d40fed1019b58ac6fbdfbf276cc
         with:
           files: "**/*.yml **/*.yaml"
           ignore: "**/.testcoverage.yml"

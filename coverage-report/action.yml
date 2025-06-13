@@ -14,7 +14,7 @@ runs:
   using: 'composite'
   steps:
     - name: Download current coverage
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
       with:
         name: code-coverage
         path: .
@@ -23,22 +23,23 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        REPOSITORY: ${{ github.repository }}
       run: |
         # Look for latest main.breakdown artifact
-        ARTIFACT=$(gh api "repos/${{ github.repository }}/actions/artifacts" \
+        ARTIFACT=$(gh api "repos/${REPOSITORY}/actions/artifacts" \
           --jq '[.artifacts[] | select(.name=="main-breakdown" and .workflow_run.head_branch=="main")] | sort_by(.updated_at) | last')
         
         if [[ "$ARTIFACT" != "null" && -n "$ARTIFACT" ]]; then
           echo "Found baseline breakdown artifact"
           RUN_ID=$(echo "$ARTIFACT" | jq -r '.workflow_run.id')
-          gh run download $RUN_ID --name=main-breakdown --dir=baseline || echo "Download failed, proceeding without baseline"
+          gh run download "$RUN_ID" --name=main-breakdown --dir=baseline || echo "Download failed, proceeding without baseline"
         else
           echo "No baseline breakdown found, proceeding without baseline"
         fi
 
     - name: Check test coverage with diff
       id: coverage
-      uses: vladopajic/go-test-coverage@v2
+      uses: vladopajic/go-test-coverage@ebf1fb6f7267bd290a83cc16f535067b51fd1d0b
       continue-on-error: true
       with:
         config: ${{ inputs.config-path || format('{0}/.testcoverage.yml', github.action_path) }}
@@ -49,21 +50,24 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        REPOSITORY: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        COVERAGE_REPORT: ${{ steps.coverage.outputs.report }}
       run: |
-        COMMENT_ID=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+        COMMENT_ID=$(gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" \
           --jq '.[] | select(.user.login=="github-actions[bot]" and (.body | contains("go-test-coverage report:"))) | .id' \
           | head -n 1)
 
         COMMENT_BODY="go-test-coverage report:
         \`\`\`
-        ${{ fromJSON(steps.coverage.outputs.report) }}
+        ${COVERAGE_REPORT}
         \`\`\`"
 
         if [ -z "$COMMENT_ID" ]; then
           echo "Creating new coverage comment"
-          gh pr comment ${{ github.event.pull_request.number }} --body "$COMMENT_BODY"
+          gh pr comment "${PR_NUMBER}" --body "$COMMENT_BODY"
         else
           echo "Updating existing coverage comment (ID: $COMMENT_ID)"
-          gh api -X PATCH repos/${{ github.repository }}/issues/comments/$COMMENT_ID \
+          gh api -X PATCH "repos/${REPOSITORY}/issues/comments/${COMMENT_ID}" \
             -f body="$COMMENT_BODY"
         fi

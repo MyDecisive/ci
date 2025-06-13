@@ -10,7 +10,7 @@ runs:
   using: 'composite'
   steps:
     - name: Setup Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
       with:
         go-version-file: go.mod
 
@@ -22,7 +22,7 @@ runs:
         CGO_ENABLED=0 go test -cover -coverprofile=coverage.out -mod=vendor -v -count=1 ./...
 
     - name: Archive code coverage results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
       with:
         name: code-coverage
         path: coverage.out
