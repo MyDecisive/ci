@@ -94,7 +94,12 @@ runs:
           exit 0
         fi
         git commit -m "chore: Update coverage report for ${REPO_NAME} from CI"
-        git push origin main
+        if ! git push origin main; then
+          echo "❌ Push failed — possible permission or branch conflict"
+          git status
+          git log -1
+          exit 1
+        fi
 
     - name: Generate Go Coverage Badge
       id: generate-badge
@@ -114,4 +119,9 @@ runs:
 
         git add README.md
         git commit -m "chore: Updated coverage badge. [skip ci]" || echo "No changes to commit"
-        git push origin main
+        if ! git push origin main; then
+          echo "❌ Push failed — possible permission or branch conflict"
+          git status
+          git log -1
+          exit 1
+        fi

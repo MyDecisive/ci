@@ -66,6 +66,7 @@ runs:
 
     - name: Find and download baseline breakdown
       shell: bash
+      continue-on-error: true
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         REPOSITORY: ${{ github.repository }}
@@ -110,7 +111,10 @@ runs:
 
         if [ -z "$COMMENT_ID" ]; then
           echo "Creating new coverage comment"
-          gh pr comment "${PR_NUMBER}" --body "$COMMENT_BODY"
+          if ! gh pr comment "${PR_NUMBER}" --body "$COMMENT_BODY"; then
+            echo "❌ Failed to post comment to PR #${PR_NUMBER}"
+            exit 1
+          fi
         else
           echo "Updating existing coverage comment (ID: $COMMENT_ID)"
           gh api -X PATCH "repos/${REPOSITORY}/issues/comments/${COMMENT_ID}" \
