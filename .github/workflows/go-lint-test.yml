@@ -54,7 +54,7 @@ jobs:
           fi
 
       - name: Run Go lint
-        uses: decisiveai/ci/go-lint@f2e1e3d9bfdc66b95fb8bd2a9ce59b25613a3de5
+        uses: decisiveai/ci/go-lint@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
         with:
           timeout: 5m
 
@@ -130,7 +130,7 @@ jobs:
 
     steps:
       - name: Run Go tests
-        uses: decisiveai/ci/go-test@f2e1e3d9bfdc66b95fb8bd2a9ce59b25613a3de5
+        uses: decisiveai/ci/go-test@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
         with:
           timeout: 10m
 
@@ -148,7 +148,7 @@ jobs:
 
     steps:
       - name: Generate coverage report
-        uses: decisiveai/ci/coverage-report@f2e1e3d9bfdc66b95fb8bd2a9ce59b25613a3de5
+        uses: decisiveai/ci/coverage-report@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
         with:
           config-path: ${{ inputs.config-path }}
           github-token: ${{ github.token }}
@@ -157,6 +157,9 @@ jobs:
   main-coverage:
     name: Generate and publish coverage on main
     runs-on: ubuntu-latest
+    env:
+      GITHUB_APP_ID: ${{ secrets.PLATFORM_HEALTH_ACCESS_APP_ID }}
+      GITHUB_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
     needs: [test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
@@ -166,24 +169,19 @@ jobs:
     steps:
       - name: Validate secrets
         run: |
-          # Validate App ID is numeric
-          if [[ ! "${{ secrets.PLATFORM_HEALTH_ACCESS_APP_ID }}" =~ ^[0-9]+$ ]]; then
+          if [[ ! "${GITHUB_APP_ID}" =~ ^[0-9]+$ ]]; then
             echo "Error: Invalid App ID format"
             exit 1
           fi
           
-          # Check that private key is provided (but don't log it)
-          if [[ -z "${{ secrets.APP_PRIVATE_KEY }}" ]]; then
-            echo "Error: APP_PRIVATE_KEY secret is required"
+          if [[ -z "${GITHUB_PRIVATE_KEY}" ]]; then
+            echo "Error: GITHUB_PRIVATE_KEY is required"
             exit 1
           fi
 
       - name: Publish coverage
-        uses: decisiveai/ci/coverage-publish@main
+        uses: decisiveai/ci/coverage-publish@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
         with:
           config-path: ${{ inputs.config-path }}
           coverage-repo: ${{ inputs.coverage-repo }}
           timeout: 5m
-        env:
-          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
-          GITHUB_PRIVATE_KEY: ${{ secrets.GITHUB_PRIVATE_KEY }}

@@ -59,9 +59,6 @@ runs:
     - name: Generate GitHub App token
       uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
       id: generate_token
-      env:
-        GITHUB_APP_ID
-        GITHUB_PRIVATE_KEY
       with:
         app-id: ${{ env.GITHUB_APP_ID }}
         private-key: ${{ env.GITHUB_PRIVATE_KEY }}
