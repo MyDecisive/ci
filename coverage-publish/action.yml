@@ -10,110 +10,10 @@ inputs:
     description: 'Repository to publish coverage to'
     required: false
     default: 'DecisiveAI/platform-health'
-  app-id:
-    description: 'GitHub App ID for authentication'
-    required: true
-  private-key:
-    description: 'GitHub App private key'
-    required: true
-  github-token:
-    description: 'GitHub token for badge updates'
-    required: true
 
 runs:
   using: 'composite'
   steps:
-    - name: Validate GitHub App ID
-      shell: bash
-      run: |
-        if [[ -z "${{ inputs.app-id }}" ]]; then
-          echo "❌ Error: GitHub App ID is required but not provided"
-          exit 1
-        fi
-
-        # Check if app-id is numeric
-        if [[ ! "${{ inputs.app-id }}" =~ ^[0-9]+$ ]]; then
-          echo "❌ Error: GitHub App ID must be numeric, got: '${{ inputs.app-id }}'"
-          exit 1
-        fi
-
-        if [[ ${{ inputs.app-id }} -lt 100000 ]]; then
-          echo "❌ Error: GitHub App ID seems too small: ${{ inputs.app-id }}"
-          echo "Expected a 6+ digit number"
-          exit 1
-        fi
-
-        echo "✅ GitHub App ID validation passed"
-
-    - name: Validate GitHub App Private Key
-      shell: bash
-      run: |
-        if [[ -z "${{ inputs.private-key }}" ]]; then
-          echo "❌ Error: GitHub App private key is required but not provided"
-          exit 1
-        fi
-
-        if [[ ! "${{ inputs.private-key }}" =~ "-----BEGIN".*"PRIVATE KEY-----" ]]; then
-          echo "❌ Error: Private key doesn't appear to be in PEM format"
-          echo "Expected format: -----BEGIN [RSA] PRIVATE KEY-----"
-          exit 1
-        fi
-
-        if [[ ! "${{ inputs.private-key }}" =~ "-----END".*"PRIVATE KEY-----" ]]; then
-          echo "❌ Error: Private key missing END marker"
-          exit 1
-        fi
-
-        # Check minimum length (GitHub App keys are typically 1600+ chars)
-        key_length=${#{{ inputs.private-key }}}
-        if [[ $key_length -lt 1500 ]]; then
-          echo "❌ Error: Private key seems too short: $key_length characters"
-          echo "Expected at least 1500 characters for a valid RSA private key"
-          exit 1
-        fi
-
-        echo "✅ GitHub App private key validation passed"
-
-    - name: Validate GitHub Token
-      shell: bash
-      run: |
-        if [[ -z "${{ inputs.github-token }}" ]]; then
-          echo "❌ Error: GitHub token is required but not provided"
-          exit 1
-        fi
-
-        # Check token format patterns
-        token="${{ inputs.github-token }}"
-
-        # GitHub personal access tokens start with 'ghp_' (classic) or 'github_pat_' (fine-grained)
-        # GitHub App installation tokens start with 'ghs_'
-        if [[ ! "$token" =~ ^(ghp_|github_pat_|ghs_) ]]; then
-          echo "❌ Error: GitHub token format not recognized"
-          echo "Expected token starting with: ghp_, github_pat_, or ghs_"
-          exit 1
-        fi
-
-        # Check minimum length
-        token_length=${#token}
-        if [[ $token_length -lt 20 ]]; then
-          echo "❌ Error: GitHub token seems too short: $token_length characters"
-          exit 1
-        fi
-
-        # Test token validity with a simple API call
-        response=$(curl -s -w "%{http_code}" -o /dev/null \
-          -H "Authorization: Bearer $token" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/user)
-
-        if [[ "$response" != "200" ]]; then
-          echo "❌ Error: GitHub token validation failed (HTTP $response)"
-          echo "Token may be invalid, expired, or lack required permissions"
-          exit 1
-        fi
-
-        echo "✅ GitHub token validation passed"
-
     - name: Clone the code
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
@@ -159,9 +59,12 @@ runs:
     - name: Generate GitHub App token
       uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
       id: generate_token
+      env:
+        GITHUB_APP_ID
+        GITHUB_PRIVATE_KEY
       with:
-        app-id: ${{ inputs.app-id }}
-        private-key: ${{ inputs.private-key }}
+        app-id: ${{ env.GITHUB_APP_ID }}
+        private-key: ${{ env.GITHUB_PRIVATE_KEY }}
         owner: ${{ steps.repo-info.outputs.owner }}
         repositories: |
           ${{ github.event.repository.name }}
@@ -170,7 +73,6 @@ runs:
     - name: Publish coverage to remote repository
       shell: bash
       env:
-        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         COVERAGE_REPO: ${{ inputs.coverage-repo }}
         REPO_NAME: ${{ github.event.repository.name }}
       run: |
@@ -202,8 +104,6 @@ runs:
 
     - name: Commit badge changes
       shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
       run: |
         git fetch origin main
         git checkout main

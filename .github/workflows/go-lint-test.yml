@@ -21,8 +21,10 @@ on:
         description: 'GitHub App ID'
         required: true
 
+# The consuming workflow needs to set these
 permissions:
-  contents: read
+  contents: write  # needed for pushing the badge
+  actions: read    # for downloading artifacts
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -138,6 +140,7 @@ jobs:
     needs: [test, check-go-file-changes]
     if: github.event_name == 'pull_request' && needs.check-go-file-changes.outputs.go_files_changed == 'true'
 
+    # consumer workflow must set these permissions
     permissions:
       contents: read
       actions: read
@@ -176,11 +179,11 @@ jobs:
           fi
 
       - name: Publish coverage
-        uses: decisiveai/ci/coverage-publish@f2e1e3d9bfdc66b95fb8bd2a9ce59b25613a3de5
+        uses: decisiveai/ci/coverage-publish@main
         with:
           config-path: ${{ inputs.config-path }}
           coverage-repo: ${{ inputs.coverage-repo }}
-          app-id: ${{ secrets.PLATFORM_HEALTH_ACCESS_APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          github-token: ${{ github.token }}
           timeout: 5m
+        env:
+          GITHUB_APP_ID: ${{ secrets.GITHUB_APP_ID }}
+          GITHUB_PRIVATE_KEY: ${{ secrets.GITHUB_PRIVATE_KEY }}
