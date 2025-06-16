@@ -22,7 +22,7 @@ jobs:
       - name: Setup CLIs
         uses: alexellis/arkade-get@7cc6ec1b6d8fcfcf3cc8cac995973147bc5fabf7
         with:
-          kube-score: 1.17.0
+          kube-score: 1.20.0
           helm: 3.14.4
 
       - name: Lint helm chart
