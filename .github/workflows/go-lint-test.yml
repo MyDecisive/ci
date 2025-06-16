@@ -51,11 +51,6 @@ jobs:
             exit 1
           fi
 
-      - name: Clone the code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-
       - name: Run Go lint
         uses: decisiveai/ci/go-lint@f2e1e3d9bfdc66b95fb8bd2a9ce59b25613a3de5
         with:
@@ -132,11 +127,6 @@ jobs:
       contents: read
 
     steps:
-      - name: Clone the code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-
       - name: Run Go tests
         uses: decisiveai/ci/go-test@f2e1e3d9bfdc66b95fb8bd2a9ce59b25613a3de5
         with:
@@ -154,11 +144,6 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Clone the code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-
       - name: Generate coverage report
         uses: decisiveai/ci/coverage-report@f2e1e3d9bfdc66b95fb8bd2a9ce59b25613a3de5
         with:
@@ -189,11 +174,6 @@ jobs:
             echo "Error: APP_PRIVATE_KEY secret is required"
             exit 1
           fi
-
-      - name: Clone the code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
 
       - name: Publish coverage
         uses: decisiveai/ci/coverage-publish@f2e1e3d9bfdc66b95fb8bd2a9ce59b25613a3de5

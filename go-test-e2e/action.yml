@@ -1,0 +1,158 @@
+name: 'Go E2E Test'
+description: 'Run E2E Go tests with kind cluster'
+
+inputs:
+  go-version-file:
+    description: 'Path to go.mod file for Go version detection'
+    required: false
+    default: 'go.mod'
+  kind-version:
+    description: 'Specific kind version to install (default: latest)'
+    required: false
+    default: 'latest'
+  cluster-name:
+    description: 'Name for the kind cluster'
+    required: false
+    default: 'kind'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        if [[ "${{ inputs.go-version-file }}" =~ \.\. ]]; then
+          echo "❌ Error: go-version-file contains path traversal (..) - security risk"
+          exit 1
+        fi
+        
+        if [[ ! "${{ inputs.go-version-file }}" =~ ^[a-zA-Z0-9._/-]+$ ]]; then
+          echo "❌ Error: go-version-file contains invalid characters"
+          echo "Allowed: alphanumeric, dots, underscores, forward slashes, hyphens"
+          exit 1
+        fi
+        
+        if [[ "${{ inputs.kind-version }}" != "latest" ]]; then
+          if [[ ! "${{ inputs.kind-version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Error: kind-version must be 'latest' or semantic version (X.Y.Z)"
+            echo "Got: '${{ inputs.kind-version }}'"
+            exit 1
+          fi
+        fi
+        
+        if [[ ! "${{ inputs.cluster-name }}" =~ ^[a-zA-Z0-9-]+$ ]]; then
+          echo "❌ Error: cluster-name contains invalid characters"
+          echo "Allowed: alphanumeric and hyphens only"
+          echo "Got: '${{ inputs.cluster-name }}'"
+          exit 1
+        fi
+        
+        if [[ ${#{{ inputs.cluster-name }}} -gt 63 ]]; then
+          echo "❌ Error: cluster-name too long (max 63 characters)"
+          exit 1
+        fi
+        
+        echo "✅ Input validation passed"
+
+    - name: Clone the code
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+    - name: Setup Go
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+      with:
+        go-version-file: ${{ inputs.go-version-file }}
+
+    - name: Install kind
+      shell: bash
+      run: |
+        if [[ "${{ inputs.kind-version }}" == "latest" ]]; then
+          KIND_URL="https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64"
+        else
+          if [[ ! "${{ inputs.kind-version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Error: Invalid version format bypassed validation"
+            exit 1
+          fi
+          KIND_URL="https://kind.sigs.k8s.io/dl/v${{ inputs.kind-version }}/kind-linux-amd64"
+        fi
+        
+        echo "Installing kind from: $KIND_URL"
+        
+        if ! curl -fsSL --max-time 30 --retry 3 -o ./kind "$KIND_URL"; then
+          echo "❌ Error: Failed to download kind from $KIND_URL"
+          exit 1
+        fi
+        
+        if [[ ! -s ./kind ]]; then
+          echo "❌ Error: Downloaded kind binary is empty"
+          exit 1
+        fi
+        
+        chmod +x ./kind
+        sudo mv ./kind /usr/local/bin/kind
+
+    - name: Verify kind installation
+      shell: bash
+      run: kind version
+
+    - name: Create kind cluster
+      shell: bash
+      run: |
+        if kind get clusters | grep -q "^${{ inputs.cluster-name }}$"; then
+          echo "Cluster ${{ inputs.cluster-name }} already exists, deleting..."
+          kind delete cluster --name ${{ inputs.cluster-name }}
+        fi
+        kind create cluster --name ${{ inputs.cluster-name }}
+
+    - name: Prepare Go modules
+      shell: bash
+      run: |
+        echo "Tidying Go modules..."
+        go mod tidy
+        echo "Vendoring Go modules..."
+        go mod vendor
+
+    - name: Install controller-gen
+      shell: bash
+      run: |
+        echo "Installing controller-gen..."
+        go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest
+
+    - name: Format code
+      shell: bash
+      run: |
+        echo "Running go fmt..."
+        go fmt ./...
+
+    - name: Vet code
+      shell: bash
+      run: |
+        echo "Running go vet..."
+        go vet ./...
+
+    - name: Generate manifests
+      shell: bash
+      run: |
+        echo "Generating WebhookConfiguration, ClusterRole and CustomResourceDefinition objects..."
+        controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+
+    - name: Generate code
+      shell: bash
+      run: |
+        echo "Generating DeepCopy methods..."
+        controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+
+    - name: Run E2E tests
+      shell: bash
+      run: |
+        if ! command -v kind >/dev/null 2>&1; then
+          echo "❌ Kind is not installed"
+          exit 1
+        fi
+        
+        if ! kind get clusters | grep -q "${{ inputs.cluster-name }}"; then
+          echo "❌ No Kind cluster '${{ inputs.cluster-name }}' is running"
+          exit 1
+        fi
+        
+        echo "Running E2E tests..."
+        go test ./test/e2e/ -v -ginkgo.v
