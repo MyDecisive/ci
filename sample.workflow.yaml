@@ -1,0 +1,57 @@
+name: Go CI Pipeline
+
+on:
+  push:
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+  pull_request:
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+
+permissions:
+  contents: write  # needed for pushing the badge on main
+  actions: read    # for downloading artifacts
+  pull-requests: write  # for coverage reports on PRs
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    uses: ./.github/workflows/go-lint.yml
+    permissions:
+      contents: read
+
+  test:
+    name: Test
+    needs: [lint]
+    uses: ./.github/workflows/go-test.yml
+    permissions:
+      contents: read
+
+  pr-coverage:
+    name: PR Coverage
+    needs: [test]
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/pr-coverage.yml
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+
+  publish-coverage:
+    name: Publish Coverage
+    needs: [test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/go-main-coverage.yml
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      PLATFORM_HEALTH_ACCESS_APP_ID: ${{ secrets.PLATFORM_HEALTH_ACCESS_APP_ID }}
+    permissions:
+      contents: read
