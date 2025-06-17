@@ -15,6 +15,8 @@ runs:
   steps:
     - name: Validate GitHub Token
       shell: bash
+      env:
+        REPOSITORY: ${{ github.repository }}
       run: |
         if [[ -z "${{ inputs.github-token }}" ]]; then
           echo "❌ Error: GitHub token is required but not provided"
@@ -43,7 +45,7 @@ runs:
         response=$(curl -s -w "%{http_code}" -o /dev/null \
           -H "Authorization: Bearer $token" \
           -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/user)
+          https://api.github.com/repos/${REPOSITORY})
 
         if [[ "$response" != "200" ]]; then
           echo "❌ Error: GitHub token validation failed (HTTP $response)"
