@@ -32,14 +32,14 @@ jobs:
         run: |
           # Validate docker image name format
           if [[ ! "${{ inputs.docker-image-name }}" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
-            echo "Error: Invalid docker image name format"
-            exit 1
+           echo "Error: Invalid docker image name format: ${{ inputs.docker-image-name }}"
+           exit 1
           fi
           
           # Validate app ID is numeric
           if [[ ! "${{ inputs.changelog-app-id }}" =~ ^[0-9]+$ ]]; then
-            echo "Error: App ID must be numeric"
-            exit 1
+           echo "Error: App ID must be numeric: ${{ inputs.changelog-app-id }}"
+           exit 1
           fi
 
       - name: Generate full changelog
