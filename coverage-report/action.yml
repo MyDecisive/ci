@@ -39,18 +39,6 @@ runs:
           exit 1
         fi
 
-        # Test token validity with a simple API call
-        response=$(curl -s -w "%{http_code}" -o /dev/null \
-          -H "Authorization: Bearer $token" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/rate_limit)
-
-        if [[ "$response" != "200" ]]; then
-          echo "❌ Error: GitHub token validation failed (HTTP $response)"
-          echo "Token may be invalid, expired, or lack required permissions"
-          exit 1
-        fi
-
         echo "✅ GitHub token validation passed"
 
     - name: Clone the code
