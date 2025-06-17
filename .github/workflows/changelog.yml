@@ -17,16 +17,33 @@ jobs:
   changelog:
     name: Generate changelog
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate inputs
+        run: |
+          # Validate docker image name format
+          if [[ ! "${{ inputs.docker-image-name }}" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
+           echo "Error: Invalid docker image name format: ${{ inputs.docker-image-name }}"
+           exit 1
+          fi
+          
+          # Validate app ID is numeric
+          if [[ ! "${{ inputs.changelog-app-id }}" =~ ^[0-9]+$ ]]; then
+           echo "Error: App ID must be numeric: ${{ inputs.changelog-app-id }}"
+           exit 1
+          fi
 
       - name: Generate full changelog
-        uses: orhun/git-cliff-action@v4
+        uses: orhun/git-cliff-action@4a4a951bc43fafe41cd2348d181853f52356bee7
         id: git-cliff
         with:
           config: cliff.toml
@@ -36,10 +53,15 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Print the changelog
-        run: cat "${{ steps.git-cliff.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY
-      
+        run: |
+          if [ -f "${{ steps.git-cliff.outputs.changelog }}" ]; then
+            cat "${{ steps.git-cliff.outputs.changelog }}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Warning: Changelog file not found"
+          fi
+
       - name: Generate release changelog
-        uses: orhun/git-cliff-action@v4
+        uses: orhun/git-cliff-action@4a4a951bc43fafe41cd2348d181853f52356bee7
         id: git-cliff-release
         with:
           config: cliff.toml
@@ -49,7 +71,7 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Create a release
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@04733e069f2d7f7f0b4aebc4fbdbce8613b03ccd
         with:
           file: CHANGELOG.md
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -62,11 +84,10 @@ jobs:
             ---
 
             > Docker images for this release can be found at public.ecr.aws/p3k6k6h3/${{ inputs.docker-image-name }}:${{ github.ref_name }}
-      
 
       - name: Get changelog app token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
         with:
           app-id: ${{ inputs.changelog-app-id }}
           private-key: ${{ secrets.changelog-app-token }}
@@ -75,29 +96,61 @@ jobs:
 
       - name: Get GitHub App User ID
         id: get-user-id
-        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        run: |
+          # Validate app slug before using it
+          APP_SLUG=$(echo "${{ steps.app-token.outputs.app-slug }}" | tr -d '\n\r')
+          if [[ ! "$APP_SLUG" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "Error: Invalid app slug format"
+            exit 1
+          fi
+          USER_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          if [[ ! "$USER_ID" =~ ^[0-9]+$ ]]; then
+            echo "Error: Invalid user ID returned"
+            exit 1
+          fi
+          echo "user-id=$USER_ID" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          
+
       - name: Set App Github Identity
         run: |
-          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
-          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>'
+          APP_SLUG=$(echo "${{ steps.app-token.outputs.app-slug }}" | tr -d '\n\r')
+          USER_ID=$(echo "${{ steps.get-user-id.outputs.user-id }}" | tr -d '\n\r')
+          git config --global user.name "${APP_SLUG}[bot]"
+          git config --global user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
 
       - name: Checkout changelog repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           token: ${{ steps.app-token.outputs.token }}
           repository: DecisiveAI/changelogs
           path: ./mdai-changelogs
           ref: main
+          persist-credentials: false
 
       - name: Commit changelog
         run: |
           cd ./mdai-changelogs
-          cp ../CHANGELOG.md ./${{ inputs.docker-image-name }}.md
-          set +e
-          git add ${{ inputs.docker-image-name }}.md
-          git commit -m "Update ${{ inputs.docker-image-name }} changelog for ${{ github.ref_name }}"
-          git push https://${{ steps.app-token.outputs.token }}@github.com/DecisiveAI/changelogs.git main
-
+          
+          # Validate files exist before copying
+          if [ ! -f "../CHANGELOG.md" ]; then
+            echo "Error: CHANGELOG.md not found"
+            exit 1
+          fi
+          
+          # Sanitize filename
+          SAFE_FILENAME=$(echo "${{ inputs.docker-image-name }}" | sed 's/[^a-zA-Z0-9._-]/_/g')
+          cp ../CHANGELOG.md "./${SAFE_FILENAME}.md"
+          
+          # Check if there are changes to commit
+          if git diff --quiet HEAD; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          git add "${SAFE_FILENAME}.md"
+          git commit -m "Update ${SAFE_FILENAME} changelog for ${{ github.ref_name }}"
+          
+          # Use token in URL for authenticated push
+          git remote set-url origin "https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/DecisiveAI/changelogs.git"
+          git push origin main

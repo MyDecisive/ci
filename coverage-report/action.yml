@@ -1,0 +1,122 @@
+name: 'Coverage Report'
+description: 'Generate and post coverage report on PR'
+
+inputs:
+  config-path:
+    description: 'Path to test coverage config'
+    required: false
+    default: ''
+  github-token:
+    description: 'GitHub token for commenting'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate GitHub Token
+      shell: bash
+      run: |
+        if [[ -z "${{ inputs.github-token }}" ]]; then
+          echo "❌ Error: GitHub token is required but not provided"
+          exit 1
+        fi
+
+        # Check token format patterns
+        token="${{ inputs.github-token }}"
+
+        # GitHub personal access tokens start with 'ghp_' (classic) or 'github_pat_' (fine-grained)
+        # GitHub App installation tokens start with 'ghs_'
+        if [[ ! "$token" =~ ^(ghp_|github_pat_|ghs_) ]]; then
+          echo "❌ Error: GitHub token format not recognized"
+          echo "Expected token starting with: ghp_, github_pat_, or ghs_"
+          exit 1
+        fi
+
+        # Check minimum length
+        token_length=${#token}
+        if [[ $token_length -lt 20 ]]; then
+          echo "❌ Error: GitHub token seems too short: $token_length characters"
+          exit 1
+        fi
+
+        # Test token validity with a simple API call
+        response=$(curl -s -w "%{http_code}" -o /dev/null \
+          -H "Authorization: Bearer $token" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/user)
+
+        if [[ "$response" != "200" ]]; then
+          echo "❌ Error: GitHub token validation failed (HTTP $response)"
+          echo "Token may be invalid, expired, or lack required permissions"
+          exit 1
+        fi
+
+        echo "✅ GitHub token validation passed"
+
+    - name: Clone the code
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        persist-credentials: false
+
+    - name: Download current coverage
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        name: code-coverage
+        path: .
+
+    - name: Find and download baseline breakdown
+      shell: bash
+      continue-on-error: true
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        REPOSITORY: ${{ github.repository }}
+      run: |
+        # Look for latest main.breakdown artifact
+        ARTIFACT=$(gh api "repos/${REPOSITORY}/actions/artifacts" \
+          --jq '[.artifacts[] | select(.name=="main-breakdown" and .workflow_run.head_branch=="main")] | sort_by(.updated_at) | last')
+        
+        if [[ "$ARTIFACT" != "null" && -n "$ARTIFACT" ]]; then
+          echo "Found baseline breakdown artifact"
+          RUN_ID=$(echo "$ARTIFACT" | jq -r '.workflow_run.id')
+          gh run download "$RUN_ID" --name=main-breakdown --dir=baseline || echo "Download failed, proceeding without baseline"
+        else
+          echo "No baseline breakdown found, proceeding without baseline"
+        fi
+
+    - name: Check test coverage with diff
+      id: coverage
+      uses: vladopajic/go-test-coverage@ebf1fb6f7267bd290a83cc16f535067b51fd1d0b
+      continue-on-error: true
+      with:
+        config: ${{ inputs.config-path || format('{0}/.testcoverage.yml', github.action_path) }}
+        profile: coverage.out
+        diff-base-breakdown-file-name: ${{ hashFiles('baseline/main.breakdown') != '' && 'baseline/main.breakdown' || '' }}
+
+    - name: Post coverage report as comment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        REPOSITORY: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        COVERAGE_REPORT: ${{ steps.coverage.outputs.report }}
+      run: |
+        COMMENT_ID=$(gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" \
+          --jq '.[] | select(.user.login=="github-actions[bot]" and (.body | contains("go-test-coverage report:"))) | .id' \
+          | head -n 1)
+
+        COMMENT_BODY="go-test-coverage report:
+        \`\`\`
+        ${COVERAGE_REPORT}
+        \`\`\`"
+
+        if [ -z "$COMMENT_ID" ]; then
+          echo "Creating new coverage comment"
+          if ! gh pr comment "${PR_NUMBER}" --body "$COMMENT_BODY"; then
+            echo "❌ Failed to post comment to PR #${PR_NUMBER}"
+            exit 1
+          fi
+        else
+          echo "Updating existing coverage comment (ID: $COMMENT_ID)"
+          gh api -X PATCH "repos/${REPOSITORY}/issues/comments/${COMMENT_ID}" \
+            -f body="$COMMENT_BODY"
+        fi

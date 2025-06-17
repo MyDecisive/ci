@@ -1,0 +1,31 @@
+name: 'Go Test with Coverage'
+description: 'Run Go tests and generate coverage report'
+
+outputs:
+  coverage-file:
+    description: 'Path to coverage output file'
+    value: 'coverage.out'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Clone the code
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        persist-credentials: false
+
+    - name: Setup Go
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+      with:
+        go-version-file: go.mod
+
+    - name: Running Tests
+      shell: bash
+      run: |
+        CGO_ENABLED=0 go test -cover -coverprofile=coverage.out -v -count=1 ./...
+
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      with:
+        name: code-coverage
+        path: coverage.out

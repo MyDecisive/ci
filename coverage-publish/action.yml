@@ -1,0 +1,124 @@
+name: 'Publish Coverage'
+description: 'Publish coverage to remote repository and update badge'
+
+inputs:
+  config-path:
+    description: 'Path to test coverage config'
+    required: false
+    default: ''
+  coverage-repo:
+    description: 'Repository to publish coverage to'
+    required: false
+    default: 'DecisiveAI/platform-health'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Clone the code
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        persist-credentials: false
+
+    - name: Download coverage artifact
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        name: code-coverage
+        path: .
+
+    - name: Generate test coverage report and breakdown
+      id: coverage
+      continue-on-error: true
+      uses: vladopajic/go-test-coverage@ebf1fb6f7267bd290a83cc16f535067b51fd1d0b
+      with:
+        config: ${{ inputs.config-path || format('{0}/.testcoverage.yml', github.action_path) }}
+        profile: coverage.out
+
+    - name: Upload breakdown as baseline for future diffs
+      uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      with:
+        name: main-breakdown
+        path: main.breakdown
+
+    - name: Save coverage report to file
+      shell: bash
+      env:
+        COVERAGE_REPORT: ${{ steps.coverage.outputs.report }}
+        REPO_NAME: ${{ github.event.repository.name }}
+      run: |
+        echo "${COVERAGE_REPORT}" > "coverage-${REPO_NAME}.txt"
+
+    - name: Extract repository info
+      id: repo-info
+      shell: bash
+      env:
+        COVERAGE_REPO: ${{ inputs.coverage-repo }}
+      run: |
+        echo "owner=${COVERAGE_REPO%/*}" >> "$GITHUB_OUTPUT"
+        echo "repo=${COVERAGE_REPO#*/}" >> "$GITHUB_OUTPUT"
+
+    - name: Generate GitHub App token
+      uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e
+      id: generate_token
+      with:
+        app-id: ${{ env.GITHUB_APP_ID }}
+        private-key: ${{ env.GITHUB_PRIVATE_KEY }}
+        owner: ${{ steps.repo-info.outputs.owner }}
+        repositories: |
+          ${{ github.event.repository.name }}
+          ${{ steps.repo-info.outputs.repo }}
+
+    - name: Publish coverage to remote repository
+      shell: bash
+      env:
+        COVERAGE_REPO: ${{ inputs.coverage-repo }}
+        REPO_NAME: ${{ github.event.repository.name }}
+      run: |
+        # Clone the coverage repository
+        git clone "https://x-access-token:${GH_TOKEN}@github.com/${COVERAGE_REPO}.git" coverage-repo
+        cd coverage-repo
+        
+        # Configure git
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Action"
+        
+        # Copy the new coverage file
+        cp "../coverage-${REPO_NAME}.txt" .
+        
+        # Commit and push changes
+        git add "coverage-${REPO_NAME}.txt"
+        if git diff --cached --quiet; then
+          echo "✅ No changes to commit."
+          exit 0
+        fi
+        git commit -m "chore: Update coverage report for ${REPO_NAME} from CI"
+        if ! git push origin main; then
+          echo "❌ Push failed — possible permission or branch conflict"
+          git status
+          git log -1
+          exit 1
+        fi
+
+    - name: Generate Go Coverage Badge
+      id: generate-badge
+      uses: tj-actions/coverage-badge-go@481919ec72da287775fef015fd9011dc75a5db05
+      with:
+        filename: coverage.out
+
+    - name: Commit badge changes
+      shell: bash
+      run: |
+        git fetch origin main
+        git checkout main
+        git pull origin main
+
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        git add README.md
+        git commit -m "chore: Updated coverage badge. [skip ci]" || echo "No changes to commit"
+        if ! git push origin main; then
+          echo "❌ Push failed — possible permission or branch conflict"
+          git status
+          git log -1
+          exit 1
+        fi

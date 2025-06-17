@@ -3,18 +3,42 @@ name: K8s checks
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup CLIs
-        uses: alexellis/arkade-get@master
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          kube-score: latest
-          helm: latest
+          persist-credentials: false
+
+      - name: Setup CLIs
+        uses: alexellis/arkade-get@7cc6ec1b6d8fcfcf3cc8cac995973147bc5fabf7
+        with:
+          kube-score: 1.20.0
+          helm: 3.14.4
+
       - name: Lint helm chart
-        run: helm lint ./deployment
+        run: |
+          # Validate chart exists before linting
+          if [ ! -d "./deployment" ]; then
+            echo "Error: ./deployment directory not found"
+            exit 1
+          fi
+          helm lint ./deployment
+
       - name: kube-score
-        run: helm template ./deployment | kube-score score -
+        run: |
+          # Validate chart exists and run kube-score
+          if [ ! -d "./deployment" ]; then
+            echo "Error: ./deployment directory not found"
+            exit 1
+          fi
+          helm template ./deployment | kube-score score -

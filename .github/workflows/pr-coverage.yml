@@ -1,0 +1,37 @@
+name: PR Coverage
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: 'Path to test coverage config'
+        type: string
+        required: false
+        default: '../../coverage-report/.testcoverage.yml'
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  report-coverage:
+    name: Report code coverage
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+
+    steps:
+      - name: Generate coverage report
+        uses: decisiveai/ci/coverage-report@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
+        with:
+          config-path: ${{ inputs.config-path }}
+          github-token: ${{ github.token }}
+          timeout: 15m

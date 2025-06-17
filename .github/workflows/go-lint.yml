@@ -1,4 +1,4 @@
-name: Go Test
+name: Go Lint
 
 on:
   workflow_call:
@@ -11,15 +11,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test on Ubuntu
+  lint:
+    name: Lint on Ubuntu
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
 
     steps:
-      - name: Run Go tests
-        uses: decisiveai/ci/go-test@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
+      - name: Run Go lint
+        uses: decisiveai/ci/go-lint@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
         with:
-          timeout: 10m
+          timeout: 5m
