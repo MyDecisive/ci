@@ -8,6 +8,10 @@ on:
         type: string
         required: false
         default: '../../coverage-report/.testcoverage.yml'
+    secrets:
+      github-token:
+        description: 'GitHub token for API access'
+        required: true
 
 permissions:
   contents: read
@@ -19,15 +23,10 @@ jobs:
     name: Report code coverage
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: write
-
     steps:
       - name: Generate coverage report
         uses: decisiveai/ci/coverage-report@e7af2d3f21d9f52bf7b88a07b5a08b7fd4db91bd
         with:
           config-path: ${{ inputs.config-path }}
-          github-token: ${{ github.token }}
+          github-token: ${{ secrets.github-token }}
           timeout: 15m
