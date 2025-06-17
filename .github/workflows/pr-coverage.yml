@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Generate coverage report
-        uses: decisiveai/ci/coverage-report@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
+        uses: decisiveai/ci/coverage-report@e7af2d3f21d9f52bf7b88a07b5a08b7fd4db91bd
         with:
           config-path: ${{ inputs.config-path }}
           github-token: ${{ github.token }}
