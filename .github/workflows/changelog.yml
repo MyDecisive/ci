@@ -71,7 +71,7 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Create a release
-        uses: svenstaro/upload-release-action@04733e069f2d7f7f0b4aebc4fbdbce8613b03ccd
+        uses: svenstaro/upload-release-action@5e35e583720436a2cc5f9682b6f55657101c1ea1
         with:
           file: CHANGELOG.md
           repo_token: ${{ secrets.GITHUB_TOKEN }}
