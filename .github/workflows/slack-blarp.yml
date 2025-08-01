@@ -12,6 +12,15 @@ on:
       run_id:
         required: true
         type: string
+      repo_name:
+        required: true
+        type: string
+      repo:
+        required: true
+        type: string
+      workflow:
+        required: true
+        type: string
 
 jobs:
   notify:
