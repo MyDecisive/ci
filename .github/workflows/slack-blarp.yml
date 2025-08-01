@@ -3,7 +3,7 @@ name: Notify Slack
 on:
   workflow_call:
     secrets:
-      SLACK_BLARP_URL:
+      SLACK_NOTIFY_URL:
         required: true
 
 jobs:
@@ -14,4 +14,4 @@ jobs:
         run: |
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\": \":ded-icon: ${{ github.repository }}\n:alert-icon: Workflow '${{github.workflow}}' failed on ref: ${{ github.ref_name }}\n:text-icon: Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
-            "${{ secrets.SLACK_BLARP_URL }}"
+            "${{ secrets.SLACK_NOTIFY_URL }}"
