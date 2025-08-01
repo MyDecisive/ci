@@ -29,5 +29,5 @@ jobs:
       - name: Send Slack Notification
         run: |
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\": \":x: **${{ inputs.repo_name }}** workflow '${{inputs.workflow}}' failed on ref: ${{ inputs.ref }}\nRun: https://github.com/${{ inputs.repo }}/actions/runs/${{ inputs.run_id }}\"}" \
+            --data "{\"text\": \"${{ inputs.repo_name }}\n:x: Workflow '${{inputs.workflow}}' failed on ref: ${{ inputs.ref }}\nRun: https://github.com/${{ inputs.repo }}/actions/runs/${{ inputs.run_id }}\"}" \
             "${{ secrets.SLACK_BLARP_URL }}"
