@@ -1,4 +1,4 @@
-name: Notify Slack
+name: Notify Slack on Workflow Failure
 
 on:
   workflow_call:
@@ -11,8 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack Notification
-        # if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-        if: failure()
         run: |
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\": \":ded-icon: ${{ github.repository }}\n:alert-icon: Workflow '${{github.workflow}}' failed on ref: ${{ github.ref_name }}\n:text-icon: Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
