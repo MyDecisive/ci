@@ -16,9 +16,9 @@ jobs:
     uses: DecisiveAI/ci/.github/workflows/slack-blarp.yml@rlaw/slack-blarp
     secrets:
       SLACK_BLARP_URL: ${{ secrets.SLACK_BLARP_URL }}
-    with:
-      repo_name: Cool repo lul
-      repo: ${{ github.repository }}
-      workflow: ${{ github.workflow }}
-      ref: ${{ github.ref }}
-      run_id: ${{ github.run_id }}
+    # with:
+    #   repo_name: Cool repo lul
+    #   repo: ${{ github.repository }}
+    #   workflow: ${{ github.workflow }}
+    #   ref_name: ${{ github.ref_name }}
+    #   run_id: ${{ github.run_id }}
