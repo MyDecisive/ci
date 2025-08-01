@@ -1,0 +1,24 @@
+name: Notify Slack
+
+on:
+  workflow_call:
+    secrets:
+      SLACK_BLARP_URL:
+        required: true
+    inputs:
+      ref:
+        required: true
+        type: string
+      run_id:
+        required: true
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\": \":x: Job failed on ref: ${{ inputs.ref }}\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ inputs.run_id }}\"}" \
+            "${{ secrets.SLACK_BLARP_URL }}"

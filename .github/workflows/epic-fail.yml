@@ -1,0 +1,20 @@
+name: EPIC FAIL LOL
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 1
+
+  notify-on-failure:
+    # if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: failure()
+    uses: ./slack-blarp.yml
+    secrets:
+      SLACK_BLARP_URL: ${{ secrets.SLACK_BLARP_URL }}
+    with:
+      ref: ${{ github.ref }}
+      run_id: ${{ github.run_id }}
