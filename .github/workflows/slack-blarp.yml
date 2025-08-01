@@ -5,22 +5,6 @@ on:
     secrets:
       SLACK_BLARP_URL:
         required: true
-    # inputs:
-    #   ref_name:
-    #     required: true
-    #     type: string
-    #   run_id:
-    #     required: true
-    #     type: string
-    #   repo_name:
-    #     required: true
-    #     type: string
-    #   repo:
-    #     required: true
-    #     type: string
-    #   workflow:
-    #     required: true
-    #     type: string
 
 jobs:
   notify:
@@ -31,8 +15,3 @@ jobs:
           curl -X POST -H 'Content-type: application/json' \
             --data "{\"text\": \"${{ github.repository }}\n:x: Workflow '${{github.workflow}}' failed on ref: ${{ github.ref_name }}\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
             "${{ secrets.SLACK_BLARP_URL }}"
-        
-        # run: |
-        #   curl -X POST -H 'Content-type: application/json' \
-        #     --data "{\"text\": \"${{ inputs.repo_name }}\n:x: Workflow '${{inputs.workflow}}' failed on ref: ${{ inputs.ref_name }}\nRun: https://github.com/${{ inputs.repo }}/actions/runs/${{ inputs.run_id }}\"}" \
-        #     "${{ secrets.SLACK_BLARP_URL }}"
