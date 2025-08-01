@@ -9,6 +9,7 @@ jobs:
     steps:
       - run: exit 1
 
+  # COPY THIS AND PLACE IN ANY WORKFLOW THAT NEEDS TO NOTIFY ON FAILURE
   notify-on-failure:
     needs: build
     if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
