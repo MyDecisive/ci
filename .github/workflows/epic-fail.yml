@@ -17,5 +17,8 @@ jobs:
     secrets:
       SLACK_BLARP_URL: ${{ secrets.SLACK_BLARP_URL }}
     with:
+      repo_name: Cool repo lul
+      repo: ${{ github.repository }}
+      workflow: ${{ github.workflow }}
       ref: ${{ github.ref }}
       run_id: ${{ github.run_id }}
