@@ -1,0 +1,17 @@
+name: Notify Slack on Workflow Failure
+
+on:
+  workflow_call:
+    secrets:
+      SLACK_NOTIFY_URL:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\": \":ded-icon: ${{ github.repository }}\n:alert-icon: Workflow '${{github.workflow}}' failed on ref: ${{ github.ref_name }}\n:text-icon: Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            "${{ secrets.SLACK_NOTIFY_URL }}"
