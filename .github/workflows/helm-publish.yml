@@ -47,14 +47,13 @@ jobs:
           echo "README_URL=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/v${CHART_VERSION#v}/README.md" >> "$GITHUB_ENV"
           echo "CHART_FILE=${GITHUB_REPOSITORY##*/}-${CHART_VERSION#v}.tgz" >> "$GITHUB_ENV"
 
-
       - name: Package Helm Chart
         run: make helm-package
 
       - name: Log in to GitHub Container Registry
         if: env.ORAS_DRY_RUN != 'true'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u $GITHUB_ACTOR --password-stdin
-        
+
       - name: Push Helm Chart to GHCR
         run: |
           echo "📦 ${ORAS_DRY_RUN:-false} mode"
@@ -82,8 +81,6 @@ jobs:
               --annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
               --annotation "io.artifacthub.package.readme-url=${README_URL}"
           fi
-
-
 
   notify-on-failure:
     needs: publish
