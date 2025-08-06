@@ -54,28 +54,35 @@ jobs:
       - name: Log in to GitHub Container Registry
         if: env.ORAS_DRY_RUN != 'true'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u $GITHUB_ACTOR --password-stdin
-
+        
       - name: Push Helm Chart to GHCR
         run: |
           echo "📦 ${ORAS_DRY_RUN:-false} mode"
           echo "{\"apiVersion\":\"v2\",\"name\":\"${CHART_NAME}\",\"version\":\"${CHART_VERSION}\"}" > config.json
 
-          ORAS_CMD="oras push ghcr.io/${REPO_OWNER_LC}/${CHART_NAME}:${CHART_VERSION} \
-            --config config.json:application/vnd.cncf.helm.config.v1+json \
-            ${CHART_FILE}:application/vnd.cncf.helm.chart.content.v1.tar+gzip \
-            README.md:text/markdown \
-            --annotation \"org.opencontainers.image.description=Helm chart for ${CHART_NAME}\" \
-            --annotation \"org.opencontainers.image.title=${CHART_NAME}\" \
-            --annotation \"org.opencontainers.image.version=${CHART_VERSION}\" \
-            --annotation \"org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}\" \
-            --annotation \"io.artifacthub.package.readme-url=${README_URL}\""
-
           if [[ "$ORAS_DRY_RUN" == "true" ]]; then
             echo "🔬 Dry run: would execute:"
-            echo "$ORAS_CMD"
+            echo "oras push ghcr.io/${REPO_OWNER_LC}/${CHART_NAME}:${CHART_VERSION} \\"
+            echo "  --config config.json:application/vnd.cncf.helm.config.v1+json \\"
+            echo "  ${CHART_FILE}:application/vnd.cncf.helm.chart.content.v1.tar+gzip \\"
+            echo "  README.md:text/markdown \\"
+            echo "  --annotation \"org.opencontainers.image.description=Helm chart for ${CHART_NAME}\" \\"
+            echo "  --annotation \"org.opencontainers.image.title=${CHART_NAME}\" \\"
+            echo "  --annotation \"org.opencontainers.image.version=${CHART_VERSION}\" \\"
+            echo "  --annotation \"org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}\" \\"
+            echo "  --annotation \"io.artifacthub.package.readme-url=${README_URL}\""
           else
-            eval "$ORAS_CMD"
+            oras push "ghcr.io/${REPO_OWNER_LC}/${CHART_NAME}:${CHART_VERSION}" \
+              --config config.json:application/vnd.cncf.helm.config.v1+json \
+              "${CHART_FILE}:application/vnd.cncf.helm.chart.content.v1.tar+gzip" \
+              "README.md:text/markdown" \
+              --annotation "org.opencontainers.image.description=Helm chart for ${CHART_NAME}" \
+              --annotation "org.opencontainers.image.title=${CHART_NAME}" \
+              --annotation "org.opencontainers.image.version=${CHART_VERSION}" \
+              --annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+              --annotation "io.artifacthub.package.readme-url=${README_URL}"
           fi
+
 
 
   notify-on-failure:
