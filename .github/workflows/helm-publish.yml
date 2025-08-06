@@ -59,16 +59,24 @@ jobs:
         run: |
           echo "📦 ${ORAS_DRY_RUN:-false} mode"
           echo "{\"apiVersion\":\"v2\",\"name\":\"${CHART_NAME}\",\"version\":\"${CHART_VERSION}\"}" > config.json
-          oras push "ghcr.io/${REPO_OWNER_LC}/${CHART_NAME}:${CHART_VERSION}" \
+
+          ORAS_CMD="oras push ghcr.io/${REPO_OWNER_LC}/${CHART_NAME}:${CHART_VERSION} \
             --config config.json:application/vnd.cncf.helm.config.v1+json \
-            "${CHART_FILE}:application/vnd.cncf.helm.chart.content.v1.tar+gzip" \
-            "README.md:text/markdown" \
-            --annotation "org.opencontainers.image.description=Helm chart for ${CHART_NAME}" \
-            --annotation "org.opencontainers.image.title=${CHART_NAME}" \
-            --annotation "org.opencontainers.image.version=${CHART_VERSION}" \
-            --annotation "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
-            --annotation "io.artifacthub.package.readme-url=${README_URL}" \
-            $( [[ "$ORAS_DRY_RUN" == "true" ]] && echo --dry-run )
+            ${CHART_FILE}:application/vnd.cncf.helm.chart.content.v1.tar+gzip \
+            README.md:text/markdown \
+            --annotation \"org.opencontainers.image.description=Helm chart for ${CHART_NAME}\" \
+            --annotation \"org.opencontainers.image.title=${CHART_NAME}\" \
+            --annotation \"org.opencontainers.image.version=${CHART_VERSION}\" \
+            --annotation \"org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}\" \
+            --annotation \"io.artifacthub.package.readme-url=${README_URL}\""
+
+          if [[ "$ORAS_DRY_RUN" == "true" ]]; then
+            echo "🔬 Dry run: would execute:"
+            echo "$ORAS_CMD"
+          else
+            eval "$ORAS_CMD"
+          fi
+
 
   notify-on-failure:
     needs: publish
