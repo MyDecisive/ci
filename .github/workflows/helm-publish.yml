@@ -43,11 +43,13 @@ jobs:
             CHART_VERSION="${GITHUB_REF#refs/tags/v}"
           fi
 
-          echo "CHART_NAME=${GITHUB_REPOSITORY##*/}" >> "$GITHUB_ENV"
-          echo "CHART_VERSION=${CHART_VERSION#v}" >> "$GITHUB_ENV"
-          echo "REPO_OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
-          echo "README_URL=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/v${CHART_VERSION#v}/README.md" >> "$GITHUB_ENV"
-          echo "CHART_FILE=${GITHUB_REPOSITORY##*/}-${CHART_VERSION#v}.tgz" >> "$GITHUB_ENV"
+          {
+            echo "CHART_NAME=${GITHUB_REPOSITORY##*/}"
+            echo "CHART_VERSION=${CHART_VERSION#v}"
+            echo "REPO_OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}"
+            echo "README_URL=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/v${CHART_VERSION#v}/README.md"
+            echo "CHART_FILE=${GITHUB_REPOSITORY##*/}-${CHART_VERSION#v}.tgz"
+          } >> "$GITHUB_ENV"
 
       - name: Package Helm Chart
         run: make helm-package
