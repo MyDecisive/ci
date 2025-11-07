@@ -20,21 +20,25 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      attestations: write
+      packages: write
 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup ORAS
-        uses: oras-project/setup-oras@v1
+      
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          version: 1.2.3
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.login-ecr-public.outputs.registry }}/decisiveai/${{ inputs.image_name_suffix || github.event.repository.name }}
+          images: ghcr.io/decisiveai/${{ inputs.image_name_suffix || github.event.repository.name }}
           tags: |
             type=sha,enable=true,priority=100,prefix=sha-,suffix=,format=short
             type=semver,pattern={{version}}
@@ -43,9 +47,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
       - name: Build and push
         id: push
@@ -61,6 +62,13 @@ jobs:
           platforms: linux/amd64,linux/arm64
           provenance: true
           sbom: true
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ghcr.io/decisiveai/${{ inputs.image_name_suffix || github.event.repository.name }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
 
   notify-on-failure:
     needs: build-and-publish
