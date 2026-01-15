@@ -17,5 +17,5 @@ jobs:
       - name: Send Slack Deploy Notification
         run: |
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\": \":netscape: ${{ inputs.deployed-url }} deployed by :tem-oh: ${{ github.actor }} :tem-oh-left:\n:think-render: From ref `${{ github.ref_name }}` using workflow `${{ github.workflow }}`\n:computer-cat: Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            --data "{\"text\": \":netscape: ${{ inputs.deployed-url }} deployed by :tem-oh: ${{ github.actor }} :tem-oh-left:\n:think-render: From ref '${{ github.ref_name }}' using workflow '${{ github.workflow }}'\n:computer-cat: Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
             "${{ secrets.SLACK_NOTIFY_URL }}"
