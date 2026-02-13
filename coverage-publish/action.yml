@@ -1,18 +1,18 @@
-name: 'Publish Coverage'
-description: 'Publish coverage to remote repository and update badge'
+name: "Publish Coverage"
+description: "Publish coverage to remote repository and update badge"
 
 inputs:
   config-path:
-    description: 'Path to test coverage config'
+    description: "Path to test coverage config"
     required: false
-    default: ''
+    default: ""
   coverage-repo:
-    description: 'Repository to publish coverage to'
+    description: "Repository to publish coverage to"
     required: false
-    default: 'DecisiveAI/platform-health'
+    default: "MyDecisive/platform-health"
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Clone the code
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -76,14 +76,14 @@ runs:
         # Clone the coverage repository
         git clone "https://x-access-token:${GH_TOKEN}@github.com/${COVERAGE_REPO}.git" coverage-repo
         cd coverage-repo
-        
+
         # Configure git
         git config --global user.email "action@github.com"
         git config --global user.name "GitHub Action"
-        
+
         # Copy the new coverage file
         cp "../coverage-${REPO_NAME}.txt" .
-        
+
         # Commit and push changes
         git add "coverage-${REPO_NAME}.txt"
         if git diff --cached --quiet; then

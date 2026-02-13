@@ -20,6 +20,6 @@ jobs:
 
     steps:
       - name: Run Go lint
-        uses: decisiveai/ci/go-lint@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
+        uses: MyDecisive/ci/go-lint@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
         with:
           timeout: 5m

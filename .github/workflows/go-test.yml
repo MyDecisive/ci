@@ -20,6 +20,6 @@ jobs:
 
     steps:
       - name: Run Go tests
-        uses: decisiveai/ci/go-test@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
+        uses: mydecisive/ci/go-test@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
         with:
           timeout: 10m

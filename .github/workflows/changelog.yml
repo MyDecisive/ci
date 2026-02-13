@@ -35,7 +35,7 @@ jobs:
            echo "Error: Invalid docker image name format: ${{ inputs.docker-image-name }}"
            exit 1
           fi
-          
+
           # Validate app ID is numeric
           if [[ ! "${{ inputs.changelog-app-id }}" =~ ^[0-9]+$ ]]; then
            echo "Error: App ID must be numeric: ${{ inputs.changelog-app-id }}"
@@ -123,7 +123,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           token: ${{ steps.app-token.outputs.token }}
-          repository: DecisiveAI/changelogs
+          repository: MyDecisive/changelogs
           path: ./mdai-changelogs
           ref: main
           persist-credentials: false
@@ -131,26 +131,26 @@ jobs:
       - name: Commit changelog
         run: |
           cd ./mdai-changelogs
-          
+
           # Validate files exist before copying
           if [ ! -f "../CHANGELOG.md" ]; then
             echo "Error: CHANGELOG.md not found"
             exit 1
           fi
-          
+
           # Sanitize filename
           SAFE_FILENAME=$(echo "${{ inputs.docker-image-name }}" | sed 's/[^a-zA-Z0-9._-]/_/g')
           cp ../CHANGELOG.md "./${SAFE_FILENAME}.md"
-          
+
           # Check if there are changes to commit
           if git diff --quiet HEAD; then
             echo "No changes to commit"
             exit 0
           fi
-          
+
           git add "${SAFE_FILENAME}.md"
           git commit -m "Update ${SAFE_FILENAME} changelog for ${{ github.ref_name }}"
-          
+
           # Use token in URL for authenticated push
-          git remote set-url origin "https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/DecisiveAI/changelogs.git"
+          git remote set-url origin "https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/MyDecisive/changelogs.git"
           git push origin main

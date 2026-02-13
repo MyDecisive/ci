@@ -4,10 +4,10 @@ on:
   workflow_call:
     inputs:
       config-path:
-        description: 'Path to test coverage config'
+        description: "Path to test coverage config"
         type: string
         required: false
-        default: '../../coverage-report/.testcoverage.yml'
+        default: "../../coverage-report/.testcoverage.yml"
 
 permissions:
   contents: read
@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Generate coverage report
-        uses: decisiveai/ci/coverage-report@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
+        uses: mydecisive/ci/coverage-report@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
         with:
           config-path: ${{ inputs.config-path }}
           github-token: ${{ github.token }}
