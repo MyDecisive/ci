@@ -1,2 +1,2 @@
 # ci
-Continuous integration artifacts for MDAI projects
+Continuous integration artifacts for MyDecisive projects
