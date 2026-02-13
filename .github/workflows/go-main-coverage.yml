@@ -4,21 +4,21 @@ on:
   workflow_call:
     inputs:
       config-path:
-        description: 'Path to test coverage config'
+        description: "Path to test coverage config"
         type: string
         required: false
-        default: '../../coverage-report/.testcoverage.yml'
+        default: "../../coverage-report/.testcoverage.yml"
       coverage-repo:
-        description: 'Repository to publish coverage to'
+        description: "Repository to publish coverage to"
         type: string
         required: false
-        default: 'decisiveai/platform-health'
+        default: "mydecisive/platform-health"
     secrets:
       APP_PRIVATE_KEY:
-        description: 'GitHub App private key'
+        description: "GitHub App private key"
         required: true
       PLATFORM_HEALTH_ACCESS_APP_ID:
-        description: 'GitHub App ID'
+        description: "GitHub App ID"
         required: true
 
 permissions:
@@ -47,14 +47,14 @@ jobs:
             echo "Error: Invalid App ID format"
             exit 1
           fi
-          
+
           if [[ -z "${GITHUB_PRIVATE_KEY}" ]]; then
             echo "Error: GITHUB_PRIVATE_KEY is required"
             exit 1
           fi
 
       - name: Publish coverage
-        uses: decisiveai/ci/coverage-publish@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
+        uses: mydecisive/ci/coverage-publish@45efd1d9a3b3b65fd7e2e1e4fee22f31d4473db8
         with:
           config-path: ${{ inputs.config-path }}
           coverage-repo: ${{ inputs.coverage-repo }}
