@@ -7,7 +7,7 @@ on:
         required: true
 
 jobs:
-  publish:
+  publish-helm:
     name: Build and Push Helm Chart
     runs-on: ubuntu-latest
     env:
@@ -46,7 +46,7 @@ jobs:
           fi
 
           {
-            echo "CHART_NAME=${GITHUB_REPOSITORY##*/}"
+            echo "CHART_NAME=${GITHUB_REPOSITORY##*/}-chart"
             echo "CHART_VERSION=${CHART_VERSION#v}"
             echo "REPO_OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}"
             echo "README_URL=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/v${CHART_VERSION#v}/README.md"
@@ -89,7 +89,7 @@ jobs:
           fi
 
   notify-on-failure:
-    needs: publish
+    needs: publish-helm
     if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     uses: MyDecisive/ci/.github/workflows/slack-notify.yml@main
     secrets:
