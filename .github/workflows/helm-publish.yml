@@ -46,7 +46,7 @@ jobs:
           fi
 
           {
-            echo "CHART_NAME=${GITHUB_REPOSITORY##*/}-chart"
+            echo "CHART_NAME=charts/${GITHUB_REPOSITORY##*/}"
             echo "CHART_VERSION=${CHART_VERSION#v}"
             echo "REPO_OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}"
             echo "README_URL=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/v${CHART_VERSION#v}/README.md"
