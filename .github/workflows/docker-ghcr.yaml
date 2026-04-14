@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: '.'
+      build_contexts:
+        description: 'Additional build contexts. Defaults to ""'
+        required: false
+        type: string
+        default: ''
     secrets:
       SLACK_NOTIFY_URL:
         required: true
@@ -54,6 +59,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ inputs.context }}
+          build-contexts: ${{ inputs.build_contexts }}
           push: ${{ github.event_name != 'pull_request' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
