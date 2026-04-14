@@ -11,6 +11,11 @@ on:
         description: 'Custom Dockerfile name. Defaults to "Dockerfile"'
         required: false
         type: string
+      context:
+        description: 'Custom `docker build` context. Defaults to "."'
+        required: false
+        type: string
+        default: '.'
     secrets:
       SLACK_NOTIFY_URL:
         required: true
@@ -57,7 +62,7 @@ jobs:
         id: push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ inputs.context }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           file: ${{ inputs.dockerfile_name || 'Dockerfile' }}
