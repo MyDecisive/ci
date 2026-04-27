@@ -49,7 +49,7 @@ jobs:
             echo "CHART_NAME=charts/${GITHUB_REPOSITORY##*/}"
             echo "CHART_VERSION=${CHART_VERSION#v}"
             echo "REPO_OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}"
-            echo "README_URL=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/v${CHART_VERSION#v}/README.md"
+            echo "README_URL=https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/refs/tags/v${CHART_VERSION#v}/README.md"
             echo "CHART_FILE=${GITHUB_REPOSITORY##*/}-${CHART_VERSION#v}.tgz"
           } >> "$GITHUB_ENV"
 
