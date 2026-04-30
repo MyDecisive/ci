@@ -1,0 +1,17 @@
+name: Notify Slack on Workflow Success
+
+on:
+  workflow_call:
+    secrets:
+      SLACK_NOTIFY_URL:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack Notification
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\": \":new: ${{ github.repository }}\n:tada: A new version has been published: ${{ github.ref_name }}\n:sunglasses: Check it out: https://github.com/${{ github.repository }}/pkgs/container/${{ github.event.repository.name }}\"}" \
+            "${{ secrets.SLACK_NOTIFY_URL }}"
