@@ -68,9 +68,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
 
-  notify-on-failure:
+  notify-failure:
     needs: publish-docker
     if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-    uses: MyDecisive/ci/.github/workflows/slack-notify.yml@main
+    uses: MyDecisive/ci/.github/workflows/slack-notify-failure.yml@notify_testing
+    secrets:
+      SLACK_NOTIFY_URL: ${{ secrets.SLACK_NOTIFY_URL }}
+
+  notify-success:
+    needs: publish-docker
+    if: success() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    uses: MyDecisive/ci/.github/workflows/slack-notify-success.yml@notify_testing
     secrets:
       SLACK_NOTIFY_URL: ${{ secrets.SLACK_NOTIFY_URL }}
