@@ -54,9 +54,11 @@ jobs:
             EFFECTIVE_REF="refs/tags/$EFFECTIVE_REF"
           fi
           TAG_NAME="${EFFECTIVE_REF#refs/tags/}"
-          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
-          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          [[ "$EFFECTIVE_REF" == refs/tags/* ]] && echo "is_tag=true" >> "$GITHUB_OUTPUT" || echo "is_tag=false" >> "$GITHUB_OUTPUT"
+          {
+            echo "tag_name=$TAG_NAME"
+            echo "short_sha=$(git rev-parse --short HEAD)"
+            [[ "$EFFECTIVE_REF" == refs/tags/* ]] && echo "is_tag=true" || echo "is_tag=false"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

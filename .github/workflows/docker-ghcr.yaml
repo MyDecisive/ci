@@ -52,10 +52,12 @@ jobs:
           fi
           TAG_NAME="${EFFECTIVE_REF#refs/tags/}"
           REF_NAME="${TAG_NAME#refs/heads/}"
-          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
-          echo "ref_name=$REF_NAME" >> "$GITHUB_OUTPUT"
-          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          [[ "$EFFECTIVE_REF" == refs/tags/* ]] && echo "is_tag=true" >> "$GITHUB_OUTPUT" || echo "is_tag=false" >> "$GITHUB_OUTPUT"
+          {
+            echo "tag_name=$TAG_NAME"
+            echo "ref_name=$REF_NAME"
+            echo "short_sha=$(git rev-parse --short HEAD)"
+            [[ "$EFFECTIVE_REF" == refs/tags/* ]] && echo "is_tag=true" || echo "is_tag=false"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
