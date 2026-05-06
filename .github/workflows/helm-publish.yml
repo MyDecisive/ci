@@ -2,6 +2,11 @@ name: Publish Helm Chart to GHCR
 
 on:
   workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref to publish. Defaults to github.ref'
+        required: false
+        type: string
     secrets:
       SLACK_NOTIFY_URL:
         required: true
@@ -15,8 +20,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
           fetch-tags: true
 
@@ -32,9 +38,13 @@ jobs:
           version: 1.2.3
 
       - name: Set environment variables
+        env:
+          EFFECTIVE_REF: ${{ inputs.ref || github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_REF: ${{ inputs.ref }}
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && -z "$INPUT_REF" ]]; then
             echo "🔧 Mocking tag version for dry-run..."
             {
               echo "GITHUB_REF=refs/tags/v0.0.0-dryrun"
@@ -42,7 +52,7 @@ jobs:
             } >> "$GITHUB_ENV"
             CHART_VERSION="v0.0.0-dryrun"
           else
-            CHART_VERSION="${GITHUB_REF#refs/tags/v}"
+            CHART_VERSION="${EFFECTIVE_REF#refs/tags/v}"
           fi
 
           {
