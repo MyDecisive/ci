@@ -98,7 +98,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
-          build-args: ${{ fromJSON(inputs.build-args) }}
+          build-args: |
+            ${{ fromJSON(inputs.build-args) }}
 
   notify-on-failure:
     needs: publish-docker
