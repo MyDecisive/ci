@@ -99,8 +99,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
           build-args: |
-            ${{ fromJSON(inputs.build-args) }}
-
+            ${{ join(fromJSON(inputs.build-args), '
+            ') }}
   notify-on-failure:
     needs: publish-docker
     if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
