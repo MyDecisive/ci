@@ -92,8 +92,8 @@ jobs:
           context: ${{ inputs.context }}
           build-contexts: ${{ inputs.build_contexts }}
           push: ${{ steps.resolve_ref.outputs.is_tag == 'true' || github.event_name == 'push' }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ inputs.image_name_suffix || github.event.repository.name }}
+          cache-to: type=gha,scope=${{ inputs.image_name_suffix || github.event.repository.name }},mode=max,ignore-error=true
           file: ${{ inputs.dockerfile_name || 'Dockerfile' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
