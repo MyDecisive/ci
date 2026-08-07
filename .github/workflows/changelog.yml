@@ -43,7 +43,7 @@ jobs:
           fi
 
       - name: Generate full changelog
-        uses: orhun/git-cliff-action@4a4a951bc43fafe41cd2348d181853f52356bee7
+        uses: orhun/git-cliff-action@d77b37db2e3f7398432d34b72a12aa3e2ba87e51
         id: git-cliff
         with:
           config: cliff.toml
@@ -61,7 +61,7 @@ jobs:
           fi
 
       - name: Generate release changelog
-        uses: orhun/git-cliff-action@4a4a951bc43fafe41cd2348d181853f52356bee7
+        uses: orhun/git-cliff-action@d77b37db2e3f7398432d34b72a12aa3e2ba87e51
         id: git-cliff-release
         with:
           config: cliff.toml
