@@ -1,4 +1,4 @@
-name: Docker push for main branch
+name: Docker push to ECR for main branch
 
 on:
   workflow_call:
